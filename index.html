@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart TV Menu Interface</title>
+  <script src="https://cdn.jsdelivr.net/npm/react@18.2.0/umd/react.development.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/react-dom@18.2.0/umd/react-dom.development.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.22.9/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/7.4.0/pixi.min.js"></script>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+    // Menu Item Component with Focus Navigation
+    const MenuItem = ({ title, isFocused, onSelect }) => (
+      <div
+        className={`text-white text-2xl p-4 mx-2 rounded-lg cursor-pointer transition-all duration-200 ${
+          isFocused ? 'bg-blue-600 scale-110' : 'bg-gray-700 hover:bg-gray-600'
+        }`}
+        onClick={onSelect}
+      >
+        {title}
+      </div>
+    );
+
+    // Popup Component
+    const Popup = ({ isOpen, onClose, title }) => {
+      if (!isOpen) return null;
+      return (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+          <div className="bg-gray-800 text-white p-8 rounded-lg max-w-lg w-full text-center">
+            <h2 className="text-3xl font-bold mb-4">{title}</h2>
+            <p className="text-lg mb-6">This is a sample popup for {title} content.</p>
+            <button
+              className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"
+              onClick={onClose}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      );
+    };
+
+    // WebGL Animation Component with Pixi.js
+    const WebGLAnimation = () => {
+      const canvasRef = useRef(null);
+
+      useEffect(() => {
+        const app = new PIXI.Application({
+          width: window.innerWidth,
+          height: 300,
+          backgroundColor: 0x1a1a1a,
+        });
+        canvasRef.current.appendChild(app.view);
+
+        const graphics = new PIXI.Graphics();
+        graphics.beginFill(0x3b82f6);
+        graphics.drawRect(-50, -50, 100, 100);
+        graphics.endFill();
+        graphics.position.set(window.innerWidth / 2, 150);
+        app.stage.addChild(graphics);
+
+        app.ticker.add(() => {
+          graphics.rotation += 0.02;
+        });
+
+        return () => app.destroy(true);
+      }, []);
+
+      return <div ref={canvasRef} className="w-full h-72" />;
+    };
+
+    // Main App Component
+    const App = () => {
+      const [focusedIndex, setFocusedIndex] = useState(0);
+      const [isPopupOpen, setIsPopupOpen] = useState(false);
+      const [selectedItem, setSelectedItem] = useState(null);
+
+      const menuItems = [
+        { title: "Home" },
+        { title: "Movies" },
+        { title: "Series" },
+        { title: "Live TV" },
+      ];
+
+      useEffect(() => {
+        const handleKeyDown = (e) => {
+          if (e.key === 'ArrowRight') {
+            setFocusedIndex((prev) => (prev + 1) % menuItems.length);
+          } else if (e.key === 'ArrowLeft') {
+            setFocusedIndex((prev) => (prev - 1 + menuItems.length) % menuItems.length);
+          } else if (e.key === 'Enter') {
+            setSelectedItem(menuItems[focusedIndex].title);
+            setIsPopupOpen(true);
+          }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+      }, [focusedIndex]);
+
+      const handleSelect = (index) => {
+        setFocusedIndex(index);
+        setSelectedItem(menuItems[index].title);
+        setIsPopupOpen(true);
+      };
+
+      return (
+        <div className="bg-gray-900 min-h-screen flex flex-col items-center justify-center">
+          <h1 className="text-white text-4xl font-bold mb-8">Smart TV Menu</h1>
+          <WebGLAnimation />
+          <div className="flex justify-center mt-8">
+            {menuItems.map((item, index) => (
+              <MenuItem
+                key={index}
+                title={item.title}
+                isFocused={focusedIndex === index}
+                onSelect={() => handleSelect(index)}
+              />
+            ))}
+          </div>
+          <Popup
+            isOpen={isPopupOpen}
+            onClose={() => setIsPopupOpen(false)}
+            title={selectedItem || ''}
+          />
+        </div>
+      );
+    };
+
+    ReactDOM.render(<App />, document.getElementById('root'));
+  </script>
+</body>
+</html>
